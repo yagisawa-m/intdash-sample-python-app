@@ -36,7 +36,7 @@ def load_config(path: str = "config.toml") -> dict:
 async def on_data(datapoint) -> None:
     """受信データを表示する。GUI化時にここを差し替える。"""
     try:
-        string_data = intdash.String.from_payload(datapoint.data_payload)
+        string_data = intdash.data.String.from_payload(datapoint.data_payload)
         print(string_data.value)
     except Exception as e:
         print(f"[warn] Failed to decode datapoint: {e}", file=sys.stderr)
@@ -49,7 +49,10 @@ async def on_close() -> None:
 async def run(config: dict) -> None:
     cfg = config["intdash"]
 
-    client = intdash.Client(url=cfg["url"])
+    client = intdash.Client(
+        url=cfg["url"],
+        edge_token=cfg["api_token"],
+    )
 
     spec = intdash.DownstreamSpec(
         src_edge_uuid=cfg["edge_uuid"],
@@ -64,10 +67,7 @@ async def run(config: dict) -> None:
 
     print(f"Connecting to {cfg['url']} ...", file=sys.stderr)
 
-    conn = await client.connect_iscp(
-        on_close=on_close,
-        token_source=intdash.StaticTokenSource(cfg["api_token"]),
-    )
+    conn = await client.connect_iscp(on_close=on_close)
 
     print(
         f"Connected. Streaming from edge {cfg['edge_uuid']} (Ctrl+C to stop)",
