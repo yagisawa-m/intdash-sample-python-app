@@ -19,7 +19,7 @@ intdash からリアルタイムにデータをダウンストリームして表
 | 項目 | 内容 |
 |---|---|
 | 接続先 | intdash |
-| 認証方法 | 未定（APIトークン等を想定） |
+| 認証方法 | API トークン（My Page で発行） |
 | データ形式 | string（JSON） |
 | ストリーミング | リアルタイムのみ（過去データ取得は対象外） |
 
@@ -61,8 +61,10 @@ intdash-sample-python-app/
 ### セットアップ手順
 
 ```bash
+pip install -r requirements.txt
 cp config.toml.example config.toml
 # config.toml に実環境の値を書き込む
+python main.py
 ```
 
 ### 各ファイルの責務
@@ -76,7 +78,17 @@ cp config.toml.example config.toml
 url       = "https://example.intdash.jp"
 api_token = "your-api-token"
 edge_uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+channel   = 1
+data_id   = ""   # 空文字 = 全データID、絞り込む場合は値を設定
 ```
+
+| キー | 説明 |
+|---|---|
+| `url` | intdash サーバーの URL |
+| `api_token` | My Page（`/console/me/`）で発行した API トークン |
+| `edge_uuid` | 受信対象エッジの UUID |
+| `channel` | データチャンネル番号（デフォルト: 1） |
+| `data_id` | 受信するデータID（空文字の場合は全データIDを受信） |
 
 **main.py** — 以下の処理を担う
 
@@ -86,11 +98,13 @@ edge_uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 4. 受信データを `on_data()` コールバックへ渡す
 5. `Ctrl+C` で終了する
 
-受信時の処理は `on_data(data: str)` 関数として外出しにし、将来の GUI 化の際に差し替えやすくする。
+受信時の処理は `on_data()` 関数として外出しにし、将来の GUI 化の際に差し替えやすくする。
 
 ```python
-def on_data(data: str):
-    print(data)   # 将来ここを GUI 表示に差し替える
+async def on_data(datapoint) -> None:
+    """受信データを表示する。GUI化時にここを差し替える。"""
+    string_data = intdash.String.from_payload(datapoint.data_payload)
+    print(string_data.value)
 ```
 
 ### データフロー

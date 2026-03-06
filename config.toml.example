@@ -1,0 +1,6 @@
+[intdash]
+url       = "https://example.intdash.jp"
+api_token = "your-api-token"   # My Page (/console/me/) で発行した API トークン
+edge_uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+channel   = 1
+data_id   = ""   # データIDで絞り込む場合は設定する。空文字の場合は全データIDを受信
