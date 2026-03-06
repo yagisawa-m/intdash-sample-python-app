@@ -40,36 +40,80 @@ intdash からリアルタイムにデータをダウンストリームして表
 | 項目 | 内容 |
 |---|---|
 | 言語 | Python（バージョン指定なし） |
-| ライブラリ | intdash SDK または intdash API（未定） |
+| ライブラリ | intdash SDK |
+| 設定ファイル | TOML |
 
 ---
 
-## 設定ファイル（config）
+## 設計
 
-以下の項目を設定ファイルで管理する（形式は TOML または YAML を想定）。
+### ファイル構成
 
 ```
-intdash_url       # intdash の URL
-api_token         # 認証トークン（または認証情報）
-edge_uuid         # 対象エッジの UUID
+intdash-sample-python-app/
+├── README.md
+├── config.toml.example   # 設定ファイルのサンプル（リポジトリ管理）
+├── config.toml           # 実際の設定ファイル（.gitignore で除外）
+├── main.py               # エントリーポイント（接続・受信ループ）
+└── requirements.txt      # 依存ライブラリ
 ```
+
+### セットアップ手順
+
+```bash
+cp config.toml.example config.toml
+# config.toml に実環境の値を書き込む
+```
+
+### 各ファイルの責務
+
+**config.toml.example** — 設定ファイルのサンプル。リポジトリにコミットする
+
+**config.toml** — 実環境の値を書き込む実行時設定ファイル。`.gitignore` で除外する
+
+```toml
+[intdash]
+url       = "https://example.intdash.jp"
+api_token = "your-api-token"
+edge_uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+```
+
+**main.py** — 以下の処理を担う
+
+1. `config.toml` を読み込む
+2. intdash SDK でクライアントを生成する
+3. 対象エッジの Measurement Session にサブスクライブする
+4. 受信データを `on_data()` コールバックへ渡す
+5. `Ctrl+C` で終了する
+
+受信時の処理は `on_data(data: str)` 関数として外出しにし、将来の GUI 化の際に差し替えやすくする。
+
+```python
+def on_data(data: str):
+    print(data)   # 将来ここを GUI 表示に差し替える
+```
+
+### データフロー
+
+```
+config.toml
+    ↓
+main.py ──→ intdash SDK ──→ WebSocket（リアルタイム）
+                                  ↓ 受信
+                            on_data(data)
+                                  ↓
+                            コンソール出力
+```
+
+### エラー処理方針
+
+- 接続失敗（URL 誤り・トークン期限切れ・エッジ未存在）は `stderr` にメッセージを出力して終了する
+- 受信中の例外は内容をログ出力し、可能な限り接続を維持する
 
 ---
 
 ## 将来の拡張予定
 
-- GUI アプリへの対応（tkinter / PyQt / Web UI など）
+- GUI アプリへの対応（`on_data()` を差し替えることで対応）
 - 複数エッジへの対応
 - 受信データのフィルタリング・加工
-
----
-
-## ディレクトリ構成（予定）
-
-```
-intdash-sample-python-app/
-├── README.md
-├── config.toml        # 設定ファイル
-├── main.py            # エントリーポイント
-└── requirements.txt   # 依存ライブラリ
-```
