@@ -1,4 +1,5 @@
 intdash
 pytz
 setuptools
+dearpygui
 tomli; python_version < "3.11"
